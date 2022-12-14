@@ -1,36 +1,17 @@
-import "./styles.css";
 import { useEffect,useState, useRef } from "react";
-import jsPDF from "jspdf";
-import ReportTemplate from "./ReportTemplate";
-import "./Noto-Sans-KR-normal.js";
-import "./poppins-v20-latin-regular-normal"
+
+
 import Cropper from "react-cropper";
 import "cropperjs/dist/cropper.css";
 
-
-const defaultSrc =
-"./stamp5.jpg";
-
 function App() {
-  const [imageSrc, setImageSrc] = useState('');
-
+  const [imageUrl, setImageUrl] = useState('');
+  const [imageSrc, setImageSrc] = useState('./stamp1.jpg');
   const canvasRef = useRef(null);
-  const resizedCanvasRef = useRef(null);
   const cropperRef = useRef(null);
+  const [croppedImg, setCroppedImgData] = useState({});
 
-
-
-  const [cropData, setCropData] = useState("#");
-  const [cropper, setCropper] = useState();
   const [dabi,setDabi]=useState(128);
-
-  const getCropData = () => {
-    if (typeof cropper !== "undefined") {
-      setCropData(cropper.getCroppedCanvas().toDataURL());
-    }
-  };
-
-
 
   // useEffect(() => {
   //   if (!canvasRef) return;
@@ -47,24 +28,33 @@ function App() {
   useEffect(()=>{
     var img = document.getElementById('my-image');
     const c=canvasRef.current;
-    const resizedC=resizedCanvasRef.current;
     const ctx = c.getContext("2d");
-    const resizedCtx=resizedC.getContext("2d");
     const image = new Image();
     
-    image.src = "./stamp5.jpg";
-    console.log(cropperRef)
+    image.src = imageSrc;
 
     image.onload = function() {
       const {width,height}=image;
-      c.width=width;
-      c.height=height;
-      ctx.drawImage(image, 0, 0,width,height);
+      if(width >=500 || height>=500){
+        if(width>height){
+          c.width=500;
+          c.height=height*500/width;
+          ctx.drawImage(image, 0, 0,500,height*500/width);
+        }
+        else {
+          c.width=width*500/height;
+          c.height=500;
+          ctx.drawImage(image, 0, 0,width*500/height,500);
+        }
+      } else{
+        c.width=width;
+        c.height=height;
+        ctx.drawImage(image, 0, 0,width,height);
+      }
      
       var imageData = ctx.getImageData(0,0, width, height);
       var pixel = imageData.data;
       var r=0, g=1, b=2,a=3;
-      var minY=9999, maxY=-1, minX=99999, maxX=-1;
       for (var p = 0; p<pixel.length; p+=4)
       {
         if (
@@ -73,31 +63,16 @@ function App() {
             pixel[p+b] > dabi) // if white then change alpha to 0
         {pixel[p+a] = 0;}
         else{
-          // const i=p/4;
-          // const y=i/width;
-          // const x=i % width;
-          // if(y < minY) minY=y;
-          // if(y > maxY) maxY=y;
-          // if(x < minX) minX=x;
-          // if(x > maxX) maxX=x;
-          pixel[p+r] =250;
+
+          pixel[p+r] =255;
           pixel[p+g] =0;
           pixel[p+b] =0;
         }
       }
-      // console.log(minY,maxY)   
-      // // console.log(minX,maxX)  
-      // resizedC.width=maxX-minX;
-      // resizedC.height=maxY-minY;
-
       ctx.putImageData(imageData,0,0);
-      // resizedCtx.putImageData(imageData,-minX,-minY)
-      // ctx.translate(-minX,-minY)
-      // setImage(resizedCanvasRef.current.toDataURL())
-      console.log(imageSrc);
-      console.log(canvasRef.current.toDataURL())
+   
       if(cropperRef && cropperRef.current ){
-             if(imageSrc===''){
+        if(imageUrl===''){
         cropperRef.current.cropper.replace(canvasRef.current.toDataURL())
 
       } else{
@@ -106,57 +81,49 @@ function App() {
       }
 
       }
-      setImageSrc(canvasRef.current.toDataURL())
-
-
-      // cropperRef.current?.cropper.url = canvasRef.current.toDataURL()
-
+      setImageUrl(canvasRef.current.toDataURL())
     };
-    // canvas.getContext('2d').drawImage(img, 0, 0, img.width, img.height);
-  },[dabi,cropperRef]);
+  },[dabi,cropperRef,imageSrc]);
 
-  // useEffect(()=>{
-  //   setImage(resizedCanvasRef.current.toDataURL())
-  // },[resizedCanvasRef])
+  const crop = () => {
+    const img = cropperRef.current.cropper
+      .getCroppedCanvas({
+        width: 100,
+        height: 100,
+        fillColor: "rgba(255,255,255,0)"
+      })
+      .toDataURL("image/png");
 
+    setCroppedImgData(img);
+  };
 
-  function download() {
-    var download = document.getElementById("download");
-    if(resizedCanvasRef && resizedCanvasRef.current){
-        var image = resizedCanvasRef.current
-        .toDataURL("image/png")
-        .replace("image/png", "image/octet-stream");
-    download.setAttribute("href", image);
-    // download.setAttribute("download","image-name.png");
+  const rotate = () => {
+    if(cropperRef && cropperRef.current ){
+      cropperRef.current.cropper.rotate(30)
     }
-  
-}
+  };
+
   return (
-    <div style={{backgroundColor:'black'}}>
-      <canvas ref={canvasRef} />
-      <canvas ref={resizedCanvasRef} />
+    <div >
+      <canvas ref={canvasRef} style={{display:'none'}} />
     <Cropper
       aspectRatio={1}
-      background={false}
       className="SignautreUplaod_canvas"
       dragMode="none"
       enable={true}
       guides={false}
-      rotateTo={0}
       scaleX={1}
       scaleY={1}
-      zoomTo={1}
-      style={{ height: 400, width: '100%' }}
+      style={{ height: 200, width: 560 }}
       ref={cropperRef}
-          
-     
         />
-     
 
-      <a id="download" download="triangle.png">
-    <button type="button" style={{position:'fixed'}} onClick={download()}>Download</button>
-       </a>
-       <input type='range'style={{position:'fixed',top:10}} min={0} max={255} value={dabi} onChange={(e)=>{setDabi(e.target.value)}} />
+              <button onClick={crop}>Crop</button>
+              <button onClick={rotate}>Rotate</button>
+
+              <img src={croppedImg} alt="" />
+
+       <input type='range'style={{position:'fixed',top:10}} min={0} max={255} value={dabi} step={10} onChange={(e)=>{setDabi(e.target.value)}} />
     </div>
   );
 }
