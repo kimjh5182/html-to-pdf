@@ -1,3 +1,9 @@
+* {
+  font-family: 'Poppins','Noto Sans KR', sans-serif;
+  /* font-family: 'Rubik Distressed','Noto Sans KR'; */
+  /* font-family: 'Noto Sans KR'; */
+}
+
 .button {
   background: #4537de;
   border-color: #4537de;
